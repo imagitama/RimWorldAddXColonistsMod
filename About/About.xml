@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ModMetaData>
+  <name>Add X Colonists</name>
+  <description>Mod to add any number of starting colonists. It adds a button "Add X Colonists" to the starting world map.</description>
+  <author>Imagitama</author>
+  <packageId>imagitama.addxcolonists</packageId>
+  <supportedVersions>
+    <li>1.5</li>
+  </supportedVersions>
+</ModMetaData>
