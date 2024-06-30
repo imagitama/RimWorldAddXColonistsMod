@@ -12,8 +12,10 @@ namespace RimWorldAddXColonistsMod
         public static int colonistCount = 0;
         public static bool autoAssignBestSkills = true;
         public static bool basicsHighestPrio = true;
-        public static bool doctorsFirst = true;
-        public static bool cooksFirst = true;
+        public static bool doctorBeforeFirefighter = true;
+        public static bool cookBeforeFirefighter = true;
+        public static bool attackBackInsteadFlee = true;
+        public static bool attackBackExceptDoctors = true;
 
         public static void Postfix()
         {

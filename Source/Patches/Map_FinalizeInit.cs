@@ -1,5 +1,9 @@
 ﻿using HarmonyLib;
+using RimWorld;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Verse;
 
 namespace RimWorldAddXColonistsMod
@@ -42,38 +46,52 @@ namespace RimWorldAddXColonistsMod
                 {
                     foreach (var workTypeDef in DefDatabase<WorkTypeDef>.AllDefsListForReading)
                     {
-                        if ((workTypeDef.defName == "Firefighter" || workTypeDef.defName == "Patient" || workTypeDef.defName == "Flicker" || workTypeDef.defName == "Haul+" || workTypeDef.defName == "Rescue"))
+                        // TODO: Find inbuilt type for patient/doctor/cook (not inside WorkTypeDefOf)
+                        if ((workTypeDef == WorkTypeDefOf.Firefighter || workTypeDef.defName == "Patient" || workTypeDef.defName == "Flicker" || workTypeDef.defName == "HaulUrgentlyDesignation" || workTypeDef.defName == "DoctorRescue"))
                         {
+                            if (pawn.health.DisabledWorkTypes.Contains(workTypeDef))
+                            {
+                                break;
+                            }
+                            
                             pawn.workSettings.SetPriority(workTypeDef, 1);
                         }
                     }
                 }
 
+                var relevantWorkTypes = new List<WorkTypeDef>();
+
                 foreach (var workTypeDef in DefDatabase<WorkTypeDef>.AllDefsListForReading)
                 {
-                    if (workTypeDef.relevantSkills.Contains(bestSkill.def))
+                    if (workTypeDef.relevantSkills.Contains(bestSkill.def) && !pawn.health.DisabledWorkTypes.Contains(workTypeDef))
                     {
-                        pawn.workSettings.SetPriority(workTypeDef, 1);
-
-                        if (workTypeDef.defName == "Doctor")
-                        {
-                            isDoctor = true;
-                        }
-
-                        if (workTypeDef.defName == "Cooking")
-                        {
-                            isCook = true;
-                        }
-
-                        break;
+                        relevantWorkTypes.Add(workTypeDef);
                     }
                 }
 
-                if (isDoctor && WorldInterfaceOnGUI_Patch.doctorsFirst)
+                // resolve issue where pawns will never craft because another work is always first
+                if (relevantWorkTypes.Count > 0)
+                {
+                    var random = new System.Random();
+                    var selectedWorkType = relevantWorkTypes[random.Next(relevantWorkTypes.Count)];
+                    pawn.workSettings.SetPriority(selectedWorkType, 1);
+
+                    if (selectedWorkType.defName == "Doctor")
+                    {
+                        isDoctor = true;
+                    }
+
+                    if (selectedWorkType.defName == "Cooking")
+                    {
+                        isCook = true;
+                    }
+                }
+
+                if (isDoctor && WorldInterfaceOnGUI_Patch.doctorBeforeFirefighter)
                 {
                     foreach (var workTypeDef in DefDatabase<WorkTypeDef>.AllDefsListForReading)
                     {
-                        if (workTypeDef.defName == "Firefighter")
+                        if (workTypeDef == WorkTypeDefOf.Firefighter && !pawn.health.DisabledWorkTypes.Contains(workTypeDef))
                         {
                             pawn.workSettings.SetPriority(workTypeDef, 2);
                             break;
@@ -81,14 +99,31 @@ namespace RimWorldAddXColonistsMod
                     }
                 }
 
-                if (isCook && WorldInterfaceOnGUI_Patch.cooksFirst)
+                // food is issue number 1 for 100+ colonies
+                if (isCook && WorldInterfaceOnGUI_Patch.cookBeforeFirefighter)
                 {
                     foreach (var workTypeDef in DefDatabase<WorkTypeDef>.AllDefsListForReading)
                     {
-                        if (workTypeDef.defName != "Cooking" && pawn.workSettings.GetPriority(workTypeDef) == 1 && workTypeDef.defName != "Firefighting")
+                        if (workTypeDef.defName != "Cooking" && pawn.workSettings.GetPriority(workTypeDef) == 1 && workTypeDef == WorkTypeDefOf.Firefighter && !pawn.health.DisabledWorkTypes.Contains(workTypeDef))
                         {
                             pawn.workSettings.SetPriority(workTypeDef, 2);
                             break;
+                        }
+                    }
+                }
+
+                // less micro for massive battles
+                if (WorldInterfaceOnGUI_Patch.attackBackInsteadFlee)
+                {
+                    if (WorldInterfaceOnGUI_Patch.attackBackExceptDoctors && isDoctor)
+                    {
+
+                    }
+                    else
+                    {
+                        if (pawn.Faction == Faction.OfPlayer && pawn.playerSettings != null)
+                        {
+                            pawn.playerSettings.hostilityResponse = HostilityResponseMode.Attack;
                         }
                     }
                 }

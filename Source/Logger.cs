@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Verse;
 
 namespace RimWorldAddXColonistsMod
@@ -7,10 +8,14 @@ namespace RimWorldAddXColonistsMod
     {
         private const string ModIdentifier = "RimWorldAddXColonistsMod";
 
-        public static void LogMessage(string message, [CallerFilePath] string callerFilePath = "", [CallerMemberName] string callerName = "")
+        public static void LogMessage(string message)
         {
-            string className = System.IO.Path.GetFileNameWithoutExtension(callerFilePath);
-            Log.Message($"{ModIdentifier}.{className}.{callerName} {message}");
+            var stackTrace = new StackTrace();
+            var frame = stackTrace.GetFrame(1);
+            var method = frame.GetMethod();
+            var className = method.DeclaringType.Name;
+
+            Log.Message($"{ModIdentifier}.{className} {message}");
         }
     }
 }
